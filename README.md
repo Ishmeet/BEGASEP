@@ -26,22 +26,21 @@ the allowed betting number range.
 When the client has sent a BEGASEP_BET message, which must follow no
 other message than BEGASEP_ACCEPT and have a betting number within
 the published range, the server is to include that client in the next
-betting run.  The client must only send the BEGASEP_BET message once,
-        any protocol breaches must immediately result in a connection teardown
-        by the server.
+betting run.  The client must only send the BEGASEP_BET message once,any 
+protocol breaches must immediately result in a connection teardown by the server.
 
-        A betting run must be performed every 15 seconds but only if there are
-        clients connected.
+A betting run must be performed every 15 seconds but only if there are
+clients connected.
 
-        The betting run must generate a random number within the published
-        betting number range and send out the winning number to all clients
-        with the BEGASEP_RESULT message, indicating for each client if they
-        won or not.  Each winner should also be printed on a seperate line to
-        stdout, syslog, or similar.  The connection to each client that betted
-        in this run must then be closed.
+The betting run must generate a random number within the published
+betting number range and send out the winning number to all clients
+with the BEGASEP_RESULT message, indicating for each client if they
+won or not.  Each winner should also be printed on a seperate line to
+stdout, syslog, or similar.  The connection to each client that betted
+in this run must then be closed.
 
-        The program must be able to run "forever" without interaction.
-        The program must be size optimized and shall allow the change of 
-        BEGASEP_NUM_CLIENTS on the fly, the changed value will be used in
-        next draw.
+The program must be able to run "forever" without interaction.
+The program must be size optimized and shall allow the change of 
+BEGASEP_NUM_CLIENTS on the fly, the changed value will be used in
+next draw.
 
