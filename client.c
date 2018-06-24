@@ -61,8 +61,11 @@ int main(int argc, char **argv) {
     if (send(sockfd, (Begasep_CommonHeader*) &SendHeader, sizeof(SendHeader), 0) == -1)
         perror("send");
 
-    printf("Client Sends    **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n", SendHeader.Version, SendHeader.Type,SendHeader.Length, SendHeader.ClientId);
+    printf("Client Sends type=BEGASEP_OPEN **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n", SendHeader.Version, SendHeader.Type,SendHeader.Length, SendHeader.ClientId);
     int ResultReceived=0;
+    Begasep_ResultMsg ResultMessage;
+    Begasep_AcceptMsg AcceptMessage;
+    Begasep_BetMsg BetMessage;
     for (;;) {
         n = read(sockfd, &RecvHeader, sizeof(RecvHeader));
         if ( n <= 0) {
@@ -73,17 +76,14 @@ int main(int argc, char **argv) {
         } 
         else 
         {
-            printf("\n\nClient Receives **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n",RecvHeader.Version, RecvHeader.Type,RecvHeader.Length, RecvHeader.ClientId);
             switch (RecvHeader.Type) {
                 case BEGASEP_ACCEPT: {
-                    printf("");
-                    Begasep_AcceptMsg AcceptMessage;
+                    printf("\n\nClient Receives type=BEGASEP_ACCEPT **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n",RecvHeader.Version, RecvHeader.Type,RecvHeader.Length, RecvHeader.ClientId);
                     if ((read(sockfd, &AcceptMessage, sizeof(AcceptMessage))) <= 0) {
                         perror("recv");
                         exit(1);
                     }
                     printf("**** |Minimum Limit = %ld | Maximum Limit  %ld | \n",AcceptMessage.LowerEndofNumber,AcceptMessage.UpperEndofNumber);
-                    Begasep_BetMsg BetMessage;
                     betNumber = GenerateBetNumber(BEGASEP_NUM_MIN, BEGASEP_NUM_MAX);
                     printf("Bet number = %ld\n\r", betNumber);
                     BetMessage.ClientBet = betNumber;
@@ -92,12 +92,12 @@ int main(int argc, char **argv) {
                         perror("send");
                     if (send(sockfd, (Begasep_BetMsg*) &BetMessage, sizeof(BetMessage),0) == -1)
                         perror("send");
-                    printf("\n\nClient Sends    **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n", SendHeader.Version, SendHeader.Type,SendHeader.Length, SendHeader.ClientId);
+                    printf("\n\nClient Sends type=BEGASEP_BET **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n", SendHeader.Version, SendHeader.Type,SendHeader.Length, SendHeader.ClientId);
                     printf("**** |Bet made = %ld |\n", BetMessage.ClientBet);
                     break;
                                      }
                 case BEGASEP_RESULT: {
-                    Begasep_ResultMsg ResultMessage;
+                    printf("\n\nClient Receives type=BEGASEP_RESULT **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n",RecvHeader.Version, RecvHeader.Type,RecvHeader.Length, RecvHeader.ClientId);
                     if ((recv(sockfd, &ResultMessage, sizeof(ResultMessage), 0)) <= 0) {
                         perror("recv");
                         exit(1);

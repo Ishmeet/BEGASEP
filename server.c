@@ -9,7 +9,6 @@
 #include <sys/time.h>
 #include <netinet/in.h> 
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
-#include <poll.h>
 #include "begasep_common.h"
 
 #define TRUE   1 
@@ -19,13 +18,13 @@
 int main(int argc , char *argv[])  
 {  
     int opt = TRUE;  
-    int master_socket , addrlen , new_socket , client_socket[40] , 
-    max_clients = 40 , activity, i , valread , sd;  
+    int master_socket , addrlen , new_socket , client_socket[BEGASEP_NUM_CLIENTS] , 
+    max_clients = BEGASEP_NUM_CLIENTS , activity, i , valread , sd;  
     int max_sd;  
     struct sockaddr_in address;  
     struct timeval timeout;
     unsigned int winningNumber=0;
-    unsigned int win_num[40];
+    unsigned int win_num[BEGASEP_NUM_CLIENTS];
 
     //set of socket descriptors 
     fd_set readfds;  
@@ -84,6 +83,12 @@ int main(int argc , char *argv[])
     FD_SET(master_socket, &readfds);  
     max_sd = master_socket;
    
+    Begasep_ResultMsg ResultMessage;
+    Begasep_CommonHeader SendHeader;
+    Begasep_CommonHeader RecvHeader;
+    Begasep_AcceptMsg AcceptMessage;
+    Begasep_BetMsg BetMessage;
+
     while(TRUE)  
     { 
         //clear the socket set 
@@ -127,21 +132,19 @@ int main(int argc , char *argv[])
                         FD_CLR(sd, &readfds);
                     }
                     printf("Sending Result message...: %ld\n\r", winningNumber);
-                    Begasep_ResultMsg ResultMessage;
                     ResultMessage.WinningNumber = winningNumber;
                     if (winningNumber == win_num[sd])
                         ResultMessage.ResultStatus = 1; //if the submitted bet is equal to the winning number
                     else
                         ResultMessage.ResultStatus = 0;
                     //the final BEGASEP_RESULT message is sent to all connected client who did submit a reques
-                    Begasep_CommonHeader SendHeader;
                     makeHeader(PROTOCOL_VERSION, BEGASEP_RESULT, sizeof(SendHeader) + sizeof(ResultMessage), sd, &SendHeader);
                     if (send(sd, (Begasep_CommonHeader*) &SendHeader, sizeof(SendHeader), 0) == -1) 
                         perror("Send error Common header of Result message\n\r");
                         if (send(sd, (Begasep_ResultMsg*) &ResultMessage, sizeof(ResultMessage), 0) == -1) 
                             perror("Send error Result Message\n\r");
 
-                            printf("\n\nServer Sends time out msg   **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n", SendHeader.Version, SendHeader.Type,SendHeader.Length, sd);
+                            printf("\n\nServer Sends type=BEGASEP_RESULT   **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n", SendHeader.Version, SendHeader.Type,SendHeader.Length, sd);
                             printf("**** |Bet Status %d | Winning number %ld | \n",ResultMessage.ResultStatus,ResultMessage.WinningNumber);
 
                 }
@@ -188,8 +191,6 @@ int main(int argc , char *argv[])
 
             if (FD_ISSET( sd , &readfds))  
             {  
-                Begasep_CommonHeader RecvHeader;
-                Begasep_CommonHeader SendHeader;
                 //Check if it was for closing , and also read the 
                 //incoming message 
                 if ((valread = read( sd , &RecvHeader, sizeof(RecvHeader))) == 0)  
@@ -208,10 +209,9 @@ int main(int argc , char *argv[])
                 //Echo back the message that came in 
                 else
                 {  
-                    printf("\n\nServer Receives **** |Version = %2u | Length = %2u | Type = %d | ClientID = %d | **** \n",RecvHeader.Version,RecvHeader.Length, RecvHeader.Type,RecvHeader.ClientId);
                     switch(RecvHeader.Type) {
                         case BEGASEP_OPEN: {
-                            Begasep_AcceptMsg AcceptMessage;
+                            printf("\n\nServer Receives type=BEGASEP_OPEN **** |Version = %2u | Length = %2u | Type = %d | ClientID = %d | **** \n",RecvHeader.Version,RecvHeader.Length, RecvHeader.Type,RecvHeader.ClientId);
                             AcceptMessage.LowerEndofNumber = BEGASEP_NUM_MIN;
                             AcceptMessage.UpperEndofNumber = BEGASEP_NUM_MAX;
                             //header for BEGASEP_ACCEPT is created
@@ -222,12 +222,12 @@ int main(int argc , char *argv[])
                             //in response BEGASEP_ACCEPT is sent to the client
                             if (send(sd, (Begasep_AcceptMsg*) &AcceptMessage,sizeof(AcceptMessage), 0) == -1)
                                 perror("send");
-                            printf("\n\nServer Sends    **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n",SendHeader.Version,SendHeader.Type,SendHeader.Length,SendHeader.ClientId);
+                            printf("\n\nServer Sends type=BEGASEP_ACCEPT **** |Version = %2u | Packet Type = %2u | Packet Length = %d | ClientID = %d | **** \n",SendHeader.Version,SendHeader.Type,SendHeader.Length,SendHeader.ClientId);
                             printf("**** | Minimum Limit = %ld | Maximum Limit  %ld | \n",AcceptMessage.LowerEndofNumber,AcceptMessage.UpperEndofNumber);
                             break;
                                            }
                         case BEGASEP_BET: {
-                            Begasep_BetMsg BetMessage;
+                            printf("\n\nServer Receives type=BEGASEP_BET **** |Version = %2u | Length = %2u | Type = %d | ClientID = %d | **** \n",RecvHeader.Version,RecvHeader.Length, RecvHeader.Type,RecvHeader.ClientId);
                             if ((recv(sd, &BetMessage, sizeof(BetMessage), 0))<= 0) {
                                 perror("recv");
                                 exit(1);

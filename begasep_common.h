@@ -53,6 +53,7 @@ typedef struct BEGASEP_RESULTMSG {
 #define BEGASEP_BET     0x3
 #define BEGASEP_RESULT  0x4
 
+#define BEGASEP_NUM_CLIENTS 40
 #define BEGASEP_NUM_MIN      0xe0ffff00
 #define BEGASEP_NUM_MAX      0xe0ffffaa
 #define PROTOCOL_VERSION 0x1
